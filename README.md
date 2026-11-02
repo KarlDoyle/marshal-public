@@ -51,18 +51,25 @@ Retrieval still has a global chunk budget (12 by default). Repository-name order
 - **Jira:** live Jira support is a thin client. The offline fixture path is the tested route.
 - **CODEOWNERS:** support covers a common-glob subset, not the full GitHub specification.
 - **Routing quality:** depends on the quality and coverage of the indexed repositories and their CODEOWNERS files.
-- **Generated drafts:** suggested acceptance criteria can describe behaviour already implemented. Review the source before treating a generated draft as a required fix.
+- **Generated drafts:** every draft includes a source-review warning because acceptance criteria can describe behaviour already implemented. Output validation checks structure and evidence paths, not whether proposed changes are needed.
 - **Validation:** the 2 November 2026 combined dependency review passed 61 tests and the enforced coverage thresholds. CLI smoke tests verify help and empty-registry guidance; they do not provide in-process CLI coverage. See [validation notes](docs/VALIDATION.md).
 
 ## Run it
 
-Requirements: Node.js 24+, pnpm and a local Ollama model for rewriting. Marshal uses the versioned `@mrkarldoyle/quarry` package for code indexing and retrieval. Ollama is the default and remains local even if an Anthropic API key is configured. Cloud processing is used only when `MARSHAL_PROVIDER=anthropic` is explicitly selected.
+Requirements: Node.js 24+, pnpm and Ollama with a model for rewriting. Marshal uses the versioned `@mrkarldoyle/quarry` package for code indexing and retrieval. The first index run downloads the embedding model from Hugging Face; cached indexing and retrieval then run locally. Ollama defaults to localhost, even if an Anthropic API key is configured. Anthropic is used only when `MARSHAL_PROVIDER=anthropic` is explicitly selected. A remote `OLLAMA_HOST` also sends ticket text and retrieved code to that server.
+
+For rewriting, start `ollama serve` in another terminal, then run `ollama pull llama3.1`. Indexing and routing do not require Ollama.
 
 ```bash
 git clone https://github.com/KarlDoyle/marshal-public.git
 cd marshal-public
 pnpm install --frozen-lockfile
 pnpm build
+
+# Explicit local settings for the examples (environment variables configure Marshal)
+export MARSHAL_PROVIDER=ollama
+export MARSHAL_MODEL=llama3.1
+export OLLAMA_HOST=http://127.0.0.1:11434
 
 # Index two or more repositories
 node --experimental-sqlite dist/cli.js index <repoPath...>
@@ -77,7 +84,17 @@ node --experimental-sqlite dist/cli.js rewrite-ticket tests/fixtures/jira-issue.
 node --experimental-sqlite dist/cli.js triage "Cart total is wrong when a discount and tax both apply"
 ```
 
-Start Ollama and pull a model such as `llama3.1` for local rewriting. A ticket argument can be a saved Jira JSON file, a live Jira key (with Jira credentials configured), or a plain one-line problem description.
+A ticket argument can be a saved Jira JSON file, a live Jira key or a plain-English problem description. Missing JSON/explicit file paths fail with a path error. Live keys require `JIRA_BASE_URL`, `JIRA_EMAIL` and `JIRA_TOKEN`; an unconfigured key is not treated as ticket text. Saved issues require a non-empty `key` and `fields.summary`.
+
+Configuration is read from the process environment. `.env.example` is a reference; copying it to `.env` does not load it automatically. Export values in your shell or explicitly use `node --env-file=.env --experimental-sqlite dist/cli.js <command>`.
+
+### Draft validation and limits
+
+Rewrites require a non-empty description, acceptance criteria and definition of done, plus a string array of suggested files (which may be empty). Malformed or incomplete model output fails with an error. `likelyAffectedFiles` contains repository-qualified paths supported by the context actually supplied; unsupported or ambiguous suggestions move to `unsupportedFiles` and trigger a warning. `evidenceFiles` records the supplied sources, not proof that a change is necessary.
+
+The model receives at most 12 source chunks, 2,000 characters per chunk and 10,000 source-context characters including headings, plus 3,000 ticket characters. Truncation is reported in `warnings`. These are character limits, not model-specific token guarantees. `triage --top-k` accepts integers from 1 to 100; increasing retrieval does not increase the rewrite context limits. Route evidence can therefore include files omitted from the draft's context.
+
+Every successful rewrite includes a draft warning. The model is asked to flag existing behaviour, but source review remains necessary: validation cannot establish correctness, prevent all prompt injection or determine that suggested acceptance criteria represent missing functionality.
 
 ### Existing indexes after the identity fix
 
@@ -85,7 +102,7 @@ Database filenames now use a versioned hash of the full registry name, preventin
 
 ## Testing
 
-The tests exercise routing with a fake retriever and real CODEOWNERS fixtures, including confidence-calibration properties. The rewrite tests use a mock LLM to verify structured output and evidence handling. Adapter tests cover Quarry result mapping and resource cleanup with mocked stores; CLI smoke tests cover help and the no-indexed-repositories path. The suite runs offline without a model or network connection. GitHub Actions runs typecheck, lint, coverage-enforced tests and a build; see the [current workflow results](https://github.com/KarlDoyle/marshal-public/actions).
+The tests exercise routing heuristics with fake retrieval, labelled regression cases and real CODEOWNERS fixtures. Rewrite tests use a mock LLM to check validation, context bounds, path support and draft warnings. Indexing tests use real SQLite stores and Quarry's indexer with fixed offline embeddings. CLI smoke tests cover help, input errors and empty-registry guidance; Jira HTTP responses are mocked. The suite runs offline without a model or network connection. GitHub Actions runs typecheck, lint, coverage-enforced tests and a build; see the [current workflow results](https://github.com/KarlDoyle/marshal-public/actions).
 
 ## Engineering approach
 

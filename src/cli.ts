@@ -2,7 +2,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { Command } from "commander";
+import { Command, InvalidArgumentError } from "commander";
 import { type CodeownersRule, loadCodeowners } from "./codeowners.js";
 import { loadConfig, loadRegistry, type Registry, registryName, saveRegistry } from "./config.js";
 import { buildProvider, indexRepo, QuarryRetriever } from "./quarry-adapter.js";
@@ -16,7 +16,7 @@ program
   .name("marshal")
   .description(
     "Ticket intelligence on Quarry: route a ticket to the owning repo/team, " +
-      "and rewrite it into a code-grounded spec. Local-first, no API key by default.",
+      "and rewrite it into a reviewable draft brief. Local-first, no API key by default.",
   )
   .version("0.1.0");
 
@@ -62,8 +62,8 @@ program
 
 program
   .command("route")
-  .description("Route a ticket to the owning repo + team, with calibrated confidence")
-  .argument("<ticketFileOrKey>", "path to a Jira issue JSON, or a live Jira key")
+  .description("Route a ticket to the owning repo + team, with heuristic confidence")
+  .argument("<ticketFileOrKey>", "Jira JSON path, live Jira key, or plain-English description")
   .action(async (ticketFileOrKey: string) => {
     const config = loadConfig();
     const registry = loadRegistry(config.dataDir);
@@ -81,8 +81,8 @@ program
 
 program
   .command("rewrite-ticket")
-  .description("Rewrite a thin ticket into an enriched, code-grounded spec")
-  .argument("<ticketFileOrKey>", "path to a Jira issue JSON, or a live Jira key")
+  .description("Rewrite a thin ticket into a reviewable draft implementation brief")
+  .argument("<ticketFileOrKey>", "Jira JSON path, live Jira key, or plain-English description")
   .action(async (ticketFileOrKey: string) => {
     const config = loadConfig();
     const registry = loadRegistry(config.dataDir);
@@ -103,13 +103,24 @@ program
 program
   .command("triage")
   .description(
-    "One shot: route a ticket to its owning repo/team with calibrated confidence " +
-      "AND rewrite it into a code-grounded spec. Accepts a one-line problem in plain " +
+    "One shot: route a ticket to its owning repo/team with heuristic confidence " +
+      "AND rewrite it into a reviewable draft brief. Accepts a one-line problem in plain " +
       "English, a Jira issue JSON path, or a live Jira key.",
   )
   .argument("<ticket>", "a one-line problem, a Jira issue JSON path, or a live Jira key")
-  .option("--top-k <n>", "how many code chunks to retrieve", "12")
-  .action(async (ticketArg: string, opts: { topK: string }) => {
+  .option(
+    "--top-k <n>",
+    "how many code chunks to retrieve (1–100)",
+    (value: string) => {
+      const count = Number(value);
+      if (!/^\d+$/.test(value) || !Number.isSafeInteger(count) || count < 1 || count > 100) {
+        throw new InvalidArgumentError("must be an integer between 1 and 100");
+      }
+      return count;
+    },
+    12,
+  )
+  .action(async (ticketArg: string, opts: { topK: number }) => {
     const config = loadConfig();
     const registry = loadRegistry(config.dataDir);
     const repos = reposFromRegistry(registry);
@@ -118,7 +129,7 @@ program
       process.exit(1);
     }
     const ticket = await loadTicket(ticketArg);
-    const topK = Number.parseInt(opts.topK, 10) || 12;
+    const topK = opts.topK;
 
     // Retrieve once, then route AND rewrite off the same evidence — one engine,
     // two products, no double work.
