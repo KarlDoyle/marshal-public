@@ -8,10 +8,9 @@ on:
 permissions:
   contents: read
 
-# Sequential quality gates — cheapest, fastest signal first; each step only runs
-# if the previous one passed. This is the same order the local pre-push hook
-# runs, so "green here" means "green there". Lifted from moss/relay and
-# generalised. Target: a fast, boring, always-the-same pipeline.
+# Install locked dependencies, then run the same quality commands as pre-push:
+# typecheck, lint, coverage-enforced tests and build. Each gate requires the
+# previous one to pass; CI always enforces all four.
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -33,7 +32,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # 1. Types — fastest failure.
+      # 1. Typecheck.
       - name: Typecheck
         run: pnpm typecheck
 
@@ -41,13 +40,10 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      # 3. Tests — unit + the secret-scan boundary test. Run with coverage so
-      #    the ratchet in vitest.config.ts actually enforces (was previously
-      #    `pnpm test`, which skips the --coverage flag and never triggers
-      #    the thresholds — the ratchet was defined but not a real gate).
+      # 3. Tests, including secret scanning, with Vitest's coverage floors.
       - name: Test
         run: pnpm coverage
 
-      # 4. Build last — the most expensive step.
+      # 4. Build.
       - name: Build
         run: pnpm build

@@ -4,12 +4,9 @@ import { defineConfig } from "vitest/config";
  * Vitest config — ai-starter standard, plus the `node:sqlite` handling Quarry
  * needs.
  *
- * Quarry (our retrieval engine) uses Node's built-in `node:sqlite`, which is
- * newer than Vite's bundled builtin list, so Vite tries to bundle it and fails.
- * We externalise it (prefixed + bare) and run tests in forked Node processes
- * launched with `--experimental-sqlite` so the real builtin is used. The unit
- * tests here mock retrieval and never touch SQLite, but this keeps the door open
- * to exercising the real adapter without reconfiguring.
+ * Keep SQLite imports external and launch forked test processes with
+ * `--experimental-sqlite`. Unit tests use fakes; indexing regression tests
+ * exercise real SQLite stores with fixed offline embeddings.
  */
 export default defineConfig({
   test: {
@@ -17,7 +14,7 @@ export default defineConfig({
     environment: "node",
     globals: true,
     pool: "forks",
-    // Vitest 4 flattened `poolOptions.forks.*` to top-level options.
+    // Forked processes need the SQLite flag too.
     execArgv: ["--experimental-sqlite"],
     server: {
       deps: { external: ["node:sqlite", "sqlite", /sqlite-vec/] },
@@ -27,14 +24,13 @@ export default defineConfig({
       reporter: ["text", "html"],
       include: ["src/**"],
       exclude: ["dist/**", "build/**", "scripts/**", "tests/**", "**/*.config.*", "**/*.d.ts"],
-      // Ratchet: thresholds sit at/just below current measured coverage to stop
-      // regression. Measured 2026-06-29: stmts 44.02 / branch 76.62 / funcs
-      // 68.42 / lines 44.02. Bump these up as coverage improves; never down.
+      // Agreed regression floors after the correctness follow-ups.
+      // `pnpm coverage` enforces these globally, both pre-push and in CI.
       thresholds: {
-        statements: 44,
-        branches: 76,
-        functions: 68,
-        lines: 44,
+        statements: 70,
+        branches: 82,
+        functions: 76,
+        lines: 68,
       },
     },
   },
