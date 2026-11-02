@@ -1,0 +1,169 @@
+[
+  {
+    "name": "strong owned implementation",
+    "source": "Synthetic regression example; not a benchmark.",
+    "chunks": [
+      {
+        "repo": "web-app",
+        "filePath": "src/cart.ts",
+        "similarity": 0.9
+      },
+      {
+        "repo": "unrelated",
+        "filePath": "src/logging.ts",
+        "similarity": 0.1
+      }
+    ],
+    "owners": {
+      "web-app": [
+        {
+          "pattern": "*",
+          "owners": ["@web"]
+        }
+      ]
+    },
+    "expected": {
+      "repo": "web-app",
+      "team": "@web",
+      "status": "selected",
+      "minConfidence": 0.7,
+      "maxConfidence": 1
+    }
+  },
+  {
+    "name": "ambiguous implementation ownership",
+    "source": "Synthetic equal-repository regression example.",
+    "chunks": [
+      {
+        "repo": "web-app",
+        "filePath": "src/cart.ts",
+        "similarity": 0.8
+      },
+      {
+        "repo": "payments",
+        "filePath": "src/cart.ts",
+        "similarity": 0.8
+      }
+    ],
+    "owners": {},
+    "expected": {
+      "repo": "payments",
+      "team": null,
+      "status": "tied",
+      "minConfidence": 0,
+      "maxConfidence": 0
+    }
+  },
+  {
+    "name": "weak unrelated evidence without ownership",
+    "source": "Synthetic weak-match regression example.",
+    "chunks": [
+      {
+        "repo": "logging",
+        "filePath": "src/logger.ts",
+        "similarity": 0.04
+      }
+    ],
+    "owners": {},
+    "expected": {
+      "repo": "logging",
+      "team": null,
+      "status": "selected",
+      "minConfidence": 0,
+      "maxConfidence": 0.05
+    }
+  },
+  {
+    "name": "audit cart query with numerous weaker Marshal chunks",
+    "source": "Recorded repo/path/similarity projection from the 2 November 2026 audit query: Cart total is wrong when a discount and tax both apply. Corpus: nine Marshal source files at b333021 and a synthetic one-function cart repository. Retrieval smoke evidence, not representative accuracy. Content omitted because routing does not consume it.",
+    "chunks": [
+      {
+        "repo": "marshal-source",
+        "filePath": "src/ticket.ts",
+        "similarity": 0.245,
+        "retrievalRank": 1
+      },
+      {
+        "repo": "web-app",
+        "filePath": "src/cart.ts",
+        "similarity": 0.494,
+        "retrievalRank": 1
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/rewrite.ts",
+        "similarity": 0.178,
+        "retrievalRank": 2
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/route.ts",
+        "similarity": 0.149,
+        "retrievalRank": 3
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/ticket.ts",
+        "similarity": 0.138,
+        "retrievalRank": 4
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/route.ts",
+        "similarity": 0.103,
+        "retrievalRank": 5
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/route.ts",
+        "similarity": 0.103,
+        "retrievalRank": 6
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/ticket.ts",
+        "similarity": 0.105,
+        "retrievalRank": 7
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/cli.ts",
+        "similarity": 0.198,
+        "retrievalRank": 8
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/route.ts",
+        "similarity": 0.127,
+        "retrievalRank": 9
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/cli.ts",
+        "similarity": 0.19,
+        "retrievalRank": 10
+      },
+      {
+        "repo": "marshal-source",
+        "filePath": "src/quarry-adapter.ts",
+        "similarity": 0.069,
+        "retrievalRank": 11
+      }
+    ],
+    "owners": {
+      "web-app": [
+        {
+          "pattern": "*",
+          "owners": ["@acme/web-team"]
+        }
+      ]
+    },
+    "expected": {
+      "repo": "web-app",
+      "team": "@acme/web-team",
+      "status": "selected",
+      "minConfidence": 0.2,
+      "maxConfidence": 0.5
+    }
+  }
+]

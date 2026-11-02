@@ -20,6 +20,7 @@ export type {
   RepoRef,
   RetrievedChunk,
   Retriever,
+  RouteExplanation,
   RouteResult,
   Ticket,
 } from "./types.js";
