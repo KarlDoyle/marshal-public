@@ -84,12 +84,16 @@ describe("loadConfig", () => {
 });
 
 describe("indexDbPath", () => {
-  it("builds a per-repo db path under indexes/", () => {
-    expect(indexDbPath("/data", "quarry")).toBe(join("/data", "indexes", "quarry.db"));
+  it("uses a stable, bounded current-format filename under indexes/", () => {
+    const path = indexDbPath("/data", "quarry");
+    expect(path).toMatch(/^\/data\/indexes\/v2-[a-f0-9]{64}\.db$/);
+    expect(path).toBe(indexDbPath("/data", "quarry"));
   });
 
-  it("sanitises characters unsafe for a filename", () => {
-    expect(indexDbPath("/data", "my repo/v2.0")).toBe(join("/data", "indexes", "my_repo_v2_0.db"));
+  it("distinguishes lossy-sanitisation and case-folding collisions", () => {
+    const names = ["my.repo", "my_repo", "MY_REPO", "my/repo", "my repo", "../my_repo"];
+    const paths = names.map((name) => indexDbPath("/data", name));
+    expect(new Set(paths.map((path) => path.toLowerCase())).size).toBe(names.length);
   });
 });
 

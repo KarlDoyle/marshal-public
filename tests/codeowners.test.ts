@@ -13,12 +13,46 @@ describe("parseCodeowners", () => {
     ]);
   });
 
-  it("skips a line that names a pattern but no owner", () => {
-    expect(parseCodeowners("src/**\n*  @a\n")).toEqual([{ pattern: "*", owners: ["@a"] }]);
+  it("preserves ownerless overrides", () => {
+    expect(parseCodeowners("* @a\nsrc/private/ # deliberately unowned\n")).toEqual([
+      { pattern: "*", owners: ["@a"] },
+      { pattern: "src/private/", owners: [] },
+    ]);
   });
 });
 
 describe("ownersForPath glob forms", () => {
+  it("does not let a terminal single star match nested files", () => {
+    const rules = parseCodeowners("* @default\ndocs/* @docs");
+    expect(ownersForPath(rules, "docs/readme.md")).toEqual(["@docs"]);
+    expect(ownersForPath(rules, "docs/deep/readme.md")).toEqual(["@default"]);
+    expect(ownersForPath(rules, "packages/docs/readme.md")).toEqual(["@default"]);
+  });
+
+  it("matches zero, one and multiple directories with a recursive segment", () => {
+    const rules = parseCodeowners("src/**/cart.ts @cart\n**/logs @logs");
+    for (const path of ["src/cart.ts", "src/billing/cart.ts", "src/a/b/cart.ts"]) {
+      expect(ownersForPath(rules, path)).toEqual(["@cart"]);
+    }
+    expect(ownersForPath(rules, "other/src/cart.ts")).toEqual([]);
+    for (const path of ["logs/a.txt", "build/logs/a.txt", "a/b/logs/a.txt"]) {
+      expect(ownersForPath(rules, path)).toEqual(["@logs"]);
+    }
+  });
+
+  it("matches all descendants with a trailing double star", () => {
+    const rules = parseCodeowners("docs/** @docs");
+    expect(ownersForPath(rules, "docs/readme.md")).toEqual(["@docs"]);
+    expect(ownersForPath(rules, "docs/a/b/readme.md")).toEqual(["@docs"]);
+  });
+
+  it("removes ownership with a later ownerless override and allows reassignment", () => {
+    const rules = parseCodeowners("* @default\n/apps/private\n/apps/private/public/ @public");
+    expect(ownersForPath(rules, "apps/private/secret.ts")).toEqual([]);
+    expect(ownersForPath(rules, "apps/private/public/api.ts")).toEqual(["@public"]);
+    expect(ownersForPath(rules, "apps/other/api.ts")).toEqual(["@default"]);
+  });
+
   it("anchors a leading-slash pattern to the repo root", () => {
     const rules = parseCodeowners("/config  @root-cfg\n");
     expect(ownersForPath(rules, "config/app.json")).toEqual(["@root-cfg"]);
@@ -58,6 +92,20 @@ describe("ownersForPath", () => {
 });
 
 describe("loadCodeowners", () => {
+  it("prefers .github, then root, then docs, without merging files", () => {
+    const fixture = join(import.meta.dirname, "fixtures/ownership-cases");
+    for (const [name, owner] of [
+      ["all-locations", "@github"],
+      ["root-and-docs", "@root"],
+      ["docs-only", "@docs"],
+    ]) {
+      expect(ownersForPath(loadCodeowners(join(fixture, name)) ?? [], "src/app.ts")).toEqual([
+        owner,
+      ]);
+    }
+    expect(loadCodeowners(join(fixture, "empty-github"))).toEqual([]);
+  });
+
   it("finds a CODEOWNERS under .github/", () => {
     const rules = loadCodeowners(REPO);
     expect(rules).not.toBeNull();

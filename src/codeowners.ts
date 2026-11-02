@@ -16,7 +16,7 @@ export interface CodeownersRule {
 }
 
 /** Standard locations GitHub searches, in priority order. */
-const CODEOWNERS_LOCATIONS = ["CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS"];
+const CODEOWNERS_LOCATIONS = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"];
 
 export function parseCodeowners(text: string): CodeownersRule[] {
   const rules: CodeownersRule[] = [];
@@ -24,7 +24,7 @@ export function parseCodeowners(text: string): CodeownersRule[] {
     const line = rawLine.replace(/#.*$/, "").trim();
     if (!line) continue;
     const [pattern, ...owners] = line.split(/\s+/);
-    if (!pattern || owners.length === 0) continue;
+    if (!pattern) continue;
     rules.push({ pattern, owners });
   }
   return rules;
@@ -51,15 +51,22 @@ function patternToRegExp(pattern: string): RegExp {
   if (dirOnly) p = p.slice(0, -1);
   const hasSlash = p.includes("/");
 
-  // Escape regex metachars, then expand glob stars in a single pass so `**`
-  // (any depth) and `*` (within a path segment) don't interfere.
+  // A whole **/ segment matches zero or more directories. A single * never
+  // crosses a slash; terminal ** includes every remaining path segment.
   const body = p
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*\*|\*/g, (m) => (m === "**" ? ".*" : "[^/]*"));
+    .split("/")
+    .map((segment, index, segments) => {
+      if (segment === "**") return index === segments.length - 1 ? ".*" : "(?:[^/]+/)*";
+      const literal = segment.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*");
+      return literal + (index < segments.length - 1 ? "/" : "");
+    })
+    .join("");
 
   // `docs` (no slash, not anchored) should match anywhere in the tree.
   const prefix = anchored || hasSlash ? "^" : "^(?:.*/)?";
-  const suffix = dirOnly ? "/.*$" : "(?:/.*)?$";
+  // A final wildcard names immediate files (docs/*), whereas a literal name
+  // can name a directory whose descendants inherit ownership (docs or /apps).
+  const suffix = dirOnly ? "/.*$" : p.endsWith("*") ? "$" : "(?:/.*)?$";
   return new RegExp(`${prefix}${body}${suffix}`);
 }
 

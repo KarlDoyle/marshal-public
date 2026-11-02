@@ -75,6 +75,10 @@ node --experimental-sqlite dist/cli.js triage "Cart total is wrong when a discou
 
 Start Ollama and pull a model such as `llama3.1` for local rewriting. A ticket argument can be a saved Jira JSON file, a live Jira key (with Jira credentials configured), or a plain one-line problem description.
 
+### Existing indexes after the identity fix
+
+Database filenames now use a versioned hash of the full registry name, preventing punctuation or case differences from sharing an index. Registry names and repository paths are preserved. Rebuild every registered repository once with `node --experimental-sqlite dist/cli.js index <repoPath...>`, using the same `MARSHAL_DATA_DIR` as before (default `~/.marshal`). Routing reports a rebuild instruction if a current-format index is missing. Legacy database files are left untouched and are not reused: a previously shared index cannot reliably be attributed to either repository.
+
 ## Testing
 
 The tests exercise routing with a fake retriever and real CODEOWNERS fixtures, including confidence-calibration properties. The rewrite tests use a mock LLM to verify structured output and evidence handling. Adapter tests cover Quarry result mapping and resource cleanup with mocked stores; CLI smoke tests cover help and the no-indexed-repositories path. The suite runs offline without a model or network connection. GitHub Actions runs typecheck, lint, coverage-enforced tests and a build; see the [current workflow results](https://github.com/KarlDoyle/marshal-public/actions).
