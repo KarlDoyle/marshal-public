@@ -45,10 +45,16 @@ describe("routeTicket (IO: reads real CODEOWNERS)", () => {
   });
 });
 
-describe("routeFromChunks (pure confidence calibration)", () => {
+describe("routeFromChunks (pure routing heuristics)", () => {
   it("returns zero confidence and nulls when nothing was retrieved", () => {
     const r = routeFromChunks([], new Map());
-    expect(r).toEqual({ owningRepo: null, team: null, confidence: 0, evidenceFiles: [] });
+    expect(r).toMatchObject({
+      owningRepo: null,
+      team: null,
+      confidence: 0,
+      evidenceFiles: [],
+      explanation: { repositoryStatus: "no-evidence", runnerUp: null, repositoryScores: [] },
+    });
   });
 
   it("is honest: a contested split scores lower than a clean strong match", () => {
@@ -121,7 +127,7 @@ describe("routeFromChunks (pure confidence calibration)", () => {
       ],
       new Map(),
     );
-    expect(r.owningRepo).not.toBeNull();
+    expect(r.owningRepo).toBeNull();
     expect(r.confidence).toBe(0);
   });
 

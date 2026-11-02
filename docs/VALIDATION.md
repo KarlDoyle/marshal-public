@@ -23,6 +23,12 @@ The 28-question Moss evaluation used published Quarry 0.2.2 and Moss public snap
 
 Recall measures whether any expected path appears among the top retrieved chunks, not unique files. These results are retrieval measurements, not generated-answer correctness or general accuracy. Dense-only scored higher on this corpus; the production default remains unchanged. A changed corpus prevents treating this as a controlled improvement over earlier results.
 
+## Routing regression check
+
+The routing follow-up adds `tests/fixtures/routing-cases.json`: three synthetic labelled cases (strong, ambiguous and weak) and a projection of the audit's recorded cart-query retrieval. The latter preserves repository names, paths, ranks and similarities from Marshal snapshot `b333021` plus a synthetic cart implementation. The former chunk-sum rule chose Marshal; the distinct-file mean selects the cart repository. Tests replay these inputs offline, including reversed order. They establish regression behaviour, not general routing accuracy or probability calibration. A fresh retrieval run may return different evidence after source changes.
+
+A built-CLI replay on 2 November 2026 reindexed those same audit snapshots with Quarry 0.2.2 and the real local embedding model. The cart fixture selected `web-app` / `@acme/web-team` at heuristic confidence 0.27, with `marshal-source` shown as runner-up. Reversing repository order returned identical retrieved chunks. This is a controlled smoke check, not a routing benchmark.
+
 ## Recheck a source checkout
 
 ```bash

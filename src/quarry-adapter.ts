@@ -65,9 +65,12 @@ export class QuarryRetriever implements Retriever {
   constructor(private dataDir: string) {}
 
   async retrieve(query: string, repos: RepoRef[], topK: number): Promise<RetrievedChunk[]> {
+    const orderedRepos = [...repos].sort((a, b) =>
+      a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+    );
     // Validate before loading the embedding model. VectorStore creates missing
     // databases, which would silently hide legacy or deleted indexes.
-    for (const repo of repos) {
+    for (const repo of orderedRepos) {
       if (!existsSync(indexDbPath(this.dataDir, repo.name))) {
         throw new Error(
           `Missing current-format index for ${repo.name}. Rebuild it with ` +
@@ -82,7 +85,7 @@ export class QuarryRetriever implements Retriever {
     }
     const queryEmbedding = await this.embedder.generateEmbedding(query);
     const rankedByRepo: RetrievedChunk[][] = [];
-    for (const repo of repos) {
+    for (const repo of orderedRepos) {
       const db = indexDbPath(this.dataDir, repo.name);
       const store = new VectorStore(db);
       try {

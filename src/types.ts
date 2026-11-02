@@ -49,9 +49,31 @@ export interface EvidenceFile {
 export interface RouteResult {
   owningRepo: string | null;
   team: string | null;
-  /** Honest, calibrated confidence in [0,1] — not always-high. */
+  /** Heuristic score in [0,1], not an empirically calibrated probability. */
   confidence: number;
   evidenceFiles: EvidenceFile[];
+  explanation: RouteExplanation;
+}
+
+export interface RouteExplanation {
+  repositoryStatus: "selected" | "tied" | "no-evidence";
+  /** Mean similarity of at most five distinct evidence files per repository. */
+  repositoryScores: { repo: string; score: number; evidenceFileCount: number }[];
+  runnerUp: { repo: string; score: number } | null;
+  ownership: {
+    status: "missing" | "unmatched" | "assigned" | "contested";
+    coverage: number;
+    agreement: number;
+    /** Each covered file supplies one vote, divided among its distinct owners. */
+    candidates: { owner: string; support: number }[];
+  };
+  /** Their product, rounded to two decimals, is confidence. */
+  confidenceFactors: {
+    evidenceStrength: number;
+    repositoryShare: number;
+    repositoryMargin: number;
+    ownership: number;
+  };
 }
 
 export interface EnrichedTicket {

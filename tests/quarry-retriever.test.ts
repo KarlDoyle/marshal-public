@@ -83,6 +83,26 @@ describe("QuarryRetriever", () => {
     expect(closeB).toHaveBeenCalledOnce();
   });
 
+  it("returns identical bounded evidence when repository order is reversed", async () => {
+    stores.set(indexDbPath("/data", "a"), {
+      hits: [hit("a-one.ts", 0.8), hit("a-two.ts", 0.7)],
+      close: vi.fn(),
+    });
+    stores.set(indexDbPath("/data", "b"), {
+      hits: [hit("b-one.ts", 0.8), hit("b-two.ts", 0.7)],
+      close: vi.fn(),
+    });
+    const repos = [
+      { name: "a", path: "/a" },
+      { name: "b", path: "/b" },
+    ];
+    const retriever = new QuarryRetriever("/data");
+    const forward = await retriever.retrieve("query", repos, 3);
+    const backward = await retriever.retrieve("query", [...repos].reverse(), 3);
+    expect(backward).toEqual(forward);
+    expect(forward).toHaveLength(3);
+  });
+
   it("requires a rebuild for missing or legacy indexes before loading embeddings", async () => {
     stores.set("/data/indexes/missing.db", { hits: [], close: vi.fn() });
     const retriever = new QuarryRetriever("/data");

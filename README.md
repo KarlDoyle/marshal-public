@@ -34,11 +34,15 @@ The Quarry integration is isolated in [`src/quarry-adapter.ts`](src/quarry-adapt
 
 Confidence is a heuristic score, not a measured probability that a route is correct. It combines:
 
-- How strongly retrieved code matches the ticket.
-- Whether one repository clearly wins over alternatives.
-- Whether CODEOWNERS can identify a team.
+- The mean dense similarity of up to five strongest distinct files per repository. Repeated chunks from a file do not add votes, and repositories do not win simply by returning more chunks.
+- The winning repository's score share and margin over the runner-up.
+- CODEOWNERS coverage and agreement between the owners of the evidence files. A file with multiple owners divides its vote between them.
 
 Weak matches, competing repositories and missing ownership information reduce confidence. This is an important behaviour: the tool should expose uncertainty rather than disguise it.
+
+An exact repository tie is shown explicitly with zero confidence; repository-name order chooses the displayed candidate consistently. An exact owner tie leaves the team unassigned. Without positive similarity, no repository is recommended. Route JSON includes an `explanation` with repository scores, the runner-up, ownership candidates and the four factors whose product produces confidence. Evidence files are shown in Quarry's hybrid rank order after the five-file scoring limit is applied.
+
+Retrieval still has a global chunk budget (12 by default). Repository-name order makes the round-robin merge reproducible; it does not establish relevance. A budget smaller than the number of repositories can omit repositories. Routing only compares the evidence retrieved and is not a representative accuracy evaluation.
 
 ## Current status and limitations
 
