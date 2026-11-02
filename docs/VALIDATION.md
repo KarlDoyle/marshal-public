@@ -29,6 +29,12 @@ The routing follow-up adds `tests/fixtures/routing-cases.json`: three synthetic 
 
 A built-CLI replay on 2 November 2026 reindexed those same audit snapshots with Quarry 0.2.2 and the real local embedding model. The cart fixture selected `web-app` / `@acme/web-team` at heuristic confidence 0.27, with `marshal-source` shown as runner-up. Reversing repository order returned identical retrieved chunks. This is a controlled smoke check, not a routing benchmark.
 
+## Rewrite and input guardrail check
+
+On 2 November 2026, the guardrail follow-up passed typecheck, lint, 120 offline tests, coverage thresholds and build. Coverage was 78.13% statements, 89.23% branches, 82.45% functions and 77.95% lines. Tests include incomplete/malformed model output, unsupported and ambiguous paths, context truncation, draft warnings, missing ticket files, missing Jira configuration and mocked Jira HTTP responses. They do not establish real Jira compatibility or model-answer correctness.
+
+Both built `rewrite-ticket` and `triage` completed with local Ollama `llama3.1`, explicit settings and an otherwise empty process environment, reusing the original audit snapshots reindexed for the identity fix. The model invented `marshal-source/src/cart.ts`; the implementation was in `web-app/src/cart.ts`. The unsupported suggestion was excluded from `likelyAffectedFiles`, retained in `unsupportedFiles` and accompanied by a warning. Triage also suggested irrelevant files that were present in context: path validation establishes context membership, not relevance. Both outputs carried the existing-behaviour/source-review warning. A separate clean-environment run verified the documented Node `--env-file` invocation. No live Jira or hosted model was used, and the temporary Ollama service was stopped.
+
 ## Recheck a source checkout
 
 ```bash

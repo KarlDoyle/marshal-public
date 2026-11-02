@@ -80,9 +80,14 @@ export interface EnrichedTicket {
   key: string;
   title: string;
   description: string;
+  /** Repository-qualified suggestions supported by the context actually supplied. */
   likelyAffectedFiles: string[];
+  /** Model suggestions absent from context or ambiguous across repositories. */
+  unsupportedFiles: string[];
   /** Files present in retrieved code context, kept separate from model suggestions. */
   evidenceFiles: string[];
   acceptanceCriteria: string[];
   definitionOfDone: string[];
+  /** Always includes a draft/source-review warning. */
+  warnings: string[];
 }
