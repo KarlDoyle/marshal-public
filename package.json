@@ -1,0 +1,37 @@
+{
+  "name": "marshal",
+  "version": "0.1.0",
+  "description": "Ticket intelligence built on Quarry — route a ticket to the owning repo/team and rewrite it into an enriched, code-grounded spec. Local-first, no API key by default.",
+  "type": "module",
+  "bin": {
+    "marshal": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.5.2",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "NODE_OPTIONS=--experimental-sqlite tsx src/cli.ts",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "biome check src tests",
+    "test": "NODE_OPTIONS=--experimental-sqlite vitest run",
+    "coverage": "NODE_OPTIONS=--experimental-sqlite vitest run --coverage",
+    "prepare": "git config core.hooksPath .githooks"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "@mrkarldoyle/quarry": "^0.2.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "^5.0.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.5"
+  },
+  "license": "MIT"
+}

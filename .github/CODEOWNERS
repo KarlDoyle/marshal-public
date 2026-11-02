@@ -1,0 +1,13 @@
+# CODEOWNERS — copy to .github/CODEOWNERS in the target repo.
+#
+# Enforceable only where branch protection with "require code owner
+# reviews" is active — i.e. PUBLIC repos, or any plan with the branch-
+# protection entitlement. On GitHub Free PRIVATE repos this file is inert:
+# GitHub cannot block a merge on it and won't even auto-request a review.
+# Keep it in place anyway — it starts enforcing for free the moment the
+# repo goes public or the plan changes, and it documents ownership either
+# way. Run scripts/setup-branch-protection.sh after copying this in to
+# switch on enforcement where it's actually available.
+
+.github/**   @KarlDoyle
+Sources/**   @KarlDoyle

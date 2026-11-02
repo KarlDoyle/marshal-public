@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Sequential quality gates — cheapest, fastest signal first; each step only runs
+# if the previous one passed. This is the same order the local pre-push hook
+# runs, so "green here" means "green there". Lifted from moss/relay and
+# generalised. Target: a fast, boring, always-the-same pipeline.
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        # No `version:` — pnpm/action-setup@v6 hard-fails when it is set alongside
+        # package.json's `packageManager` field, which now pins pnpm@11.5.2.
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # 1. Types — fastest failure.
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # 2. Lint + format check (biome).
+      - name: Lint
+        run: pnpm lint
+
+      # 3. Tests — unit + the secret-scan boundary test. Run with coverage so
+      #    the ratchet in vitest.config.ts actually enforces (was previously
+      #    `pnpm test`, which skips the --coverage flag and never triggers
+      #    the thresholds — the ratchet was defined but not a real gate).
+      - name: Test
+        run: pnpm coverage
+
+      # 4. Build last — the most expensive step.
+      - name: Build
+        run: pnpm build

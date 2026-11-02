@@ -1,0 +1,4 @@
+# Default owner for payments-svc
+*               @acme/payments-team
+# Billing logic has a dedicated team
+src/billing/**  @acme/billing-team

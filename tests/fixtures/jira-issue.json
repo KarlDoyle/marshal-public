@@ -1,0 +1,11 @@
+{
+  "id": "100001",
+  "key": "PROJ-100",
+  "fields": {
+    "summary": "Cart total is wrong when a discount and tax both apply",
+    "description": "Customers report the shopping cart total looks off when a discount code is applied and tax is added. We think the discount and tax are being combined in the wrong order in the cart total calculation. Please confirm the intended formula and where it lives.",
+    "status": { "name": "In Progress" },
+    "issuetype": { "name": "Bug" },
+    "priority": { "name": "High" }
+  }
+}

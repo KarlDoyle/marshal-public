@@ -1,0 +1,6 @@
+{
+  "full_name": "acme/acme-storefront",
+  "description": "Example storefront service used in Quarry tests.",
+  "language": "JavaScript",
+  "default_branch": "main"
+}

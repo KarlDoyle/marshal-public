@@ -1,0 +1,12 @@
+packages:
+  - .
+allowBuilds:
+  '@biomejs/biome': true
+  better-sqlite3: true
+  esbuild: true
+  onnxruntime-node: true
+  protobufjs: false
+  sharp: true
+overrides:
+  sharp: ">=0.35.5"
+  source-map-js: ">=1.2.2"
