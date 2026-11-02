@@ -6,6 +6,11 @@ const { generateEmbedding, initialize, stores } = vi.hoisted(() => ({
   stores: new Map<string, { hits: unknown[]; close: ReturnType<typeof vi.fn> }>(),
 }));
 
+vi.mock("node:fs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("node:fs")>()),
+  existsSync: (path: string) => stores.has(path),
+}));
+
 vi.mock("@mrkarldoyle/quarry", () => ({
   AnthropicProvider: class {},
   EmbeddingGenerator: class {
@@ -31,6 +36,7 @@ vi.mock("@mrkarldoyle/quarry", () => ({
   parseJiraIssue: vi.fn(),
 }));
 
+import { indexDbPath } from "../src/config.js";
 import { QuarryRetriever } from "../src/quarry-adapter.js";
 
 function hit(filePath: string, similarity: number) {
@@ -52,11 +58,11 @@ describe("QuarryRetriever", () => {
   it("embeds once and merges repositories by Quarry hybrid rank, not dense score", async () => {
     const closeA = vi.fn();
     const closeB = vi.fn();
-    stores.set("/data/indexes/a.db", {
+    stores.set(indexDbPath("/data", "a"), {
       hits: [hit("a-first.ts", 0.3), hit("a-dense.ts", 0.99)],
       close: closeA,
     });
-    stores.set("/data/indexes/b.db", {
+    stores.set(indexDbPath("/data", "b"), {
       hits: [hit("b-first.ts", 0.8)],
       close: closeB,
     });
@@ -77,20 +83,13 @@ describe("QuarryRetriever", () => {
     expect(closeB).toHaveBeenCalledOnce();
   });
 
-  it("skips unavailable indexes and returns available results", async () => {
-    stores.set("/data/indexes/ready.db", {
-      hits: [hit("ready.ts", 0.7)],
-      close: vi.fn(),
-    });
+  it("requires a rebuild for missing or legacy indexes before loading embeddings", async () => {
+    stores.set("/data/indexes/missing.db", { hits: [], close: vi.fn() });
     const retriever = new QuarryRetriever("/data");
-    const results = await retriever.retrieve(
-      "query",
-      [
-        { name: "missing", path: "/repos/missing" },
-        { name: "ready", path: "/repos/ready" },
-      ],
-      12,
-    );
-    expect(results.map((r) => r.filePath)).toEqual(["ready.ts"]);
+    await expect(
+      retriever.retrieve("query", [{ name: "missing", path: "/repos/missing" }], 12),
+    ).rejects.toThrow(/marshal index "\/repos\/missing"/);
+    expect(initialize).not.toHaveBeenCalled();
+    expect(generateEmbedding).not.toHaveBeenCalled();
   });
 });

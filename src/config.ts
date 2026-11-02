@@ -35,13 +35,13 @@ export function loadConfig(): MarshalConfig {
   };
 }
 
-/** Safe filename for a repo's index DB. */
-function safeName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9_-]/g, "_");
-}
-
+/**
+ * Versioned identity avoids lossy sanitisation and case-insensitive filename
+ * collisions. Registry names stay unchanged; legacy indexes must be rebuilt.
+ */
 export function indexDbPath(dataDir: string, repoName: string): string {
-  return join(dataDir, "indexes", `${safeName(repoName)}.db`);
+  const identity = createHash("sha256").update(repoName).digest("hex");
+  return join(dataDir, "indexes", `v2-${identity}.db`);
 }
 
 export interface RegistryEntry {

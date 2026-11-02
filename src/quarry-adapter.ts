@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 /**
  * The ONLY module that touches Quarry. We reuse Quarry's retrieval engine by
@@ -43,11 +43,13 @@ export async function indexRepo(
   const db = indexDbPath(config.dataDir, repoName);
   mkdirSync(dirname(db), { recursive: true });
   const store = new VectorStore(db);
-  const indexer = new RepositoryIndexer(store);
-  await indexer.initialize();
-  const result = await indexer.indexRepository(repoPath);
-  store.close();
-  return result;
+  try {
+    const indexer = new RepositoryIndexer(store);
+    await indexer.initialize();
+    return await indexer.indexRepository(repoPath);
+  } finally {
+    store.close();
+  }
 }
 
 /**
@@ -63,6 +65,17 @@ export class QuarryRetriever implements Retriever {
   constructor(private dataDir: string) {}
 
   async retrieve(query: string, repos: RepoRef[], topK: number): Promise<RetrievedChunk[]> {
+    // Validate before loading the embedding model. VectorStore creates missing
+    // databases, which would silently hide legacy or deleted indexes.
+    for (const repo of repos) {
+      if (!existsSync(indexDbPath(this.dataDir, repo.name))) {
+        throw new Error(
+          `Missing current-format index for ${repo.name}. Rebuild it with ` +
+            `marshal index ${JSON.stringify(repo.path)} (using the same MARSHAL_DATA_DIR). ` +
+            "Legacy database files are left untouched.",
+        );
+      }
+    }
     if (!this.initialized) {
       await this.embedder.initialize();
       this.initialized = true;
@@ -71,12 +84,7 @@ export class QuarryRetriever implements Retriever {
     const rankedByRepo: RetrievedChunk[][] = [];
     for (const repo of repos) {
       const db = indexDbPath(this.dataDir, repo.name);
-      let store: VectorStore;
-      try {
-        store = new VectorStore(db);
-      } catch {
-        continue; // repo not indexed yet — skip
-      }
+      const store = new VectorStore(db);
       try {
         const hits = store.search(queryEmbedding, query, topK);
         rankedByRepo.push(
