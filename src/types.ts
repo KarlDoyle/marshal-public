@@ -49,6 +49,8 @@ export interface EvidenceFile {
 export interface RouteResult {
   owningRepo: string | null;
   team: string | null;
+  /** Low-confidence candidates are investigative leads, not actionable routes. */
+  recommendationStatus: "no-evidence" | "low-confidence" | "candidate";
   /** Heuristic score in [0,1], not an empirically calibrated probability. */
   confidence: number;
   evidenceFiles: EvidenceFile[];
