@@ -69,11 +69,20 @@ describe("routing credibility", () => {
     expect(contested.explanation.runnerUp?.repo).toBe("b");
   });
 
-  it("keeps a weak match low even with complete ownership", () => {
+  it("marks a weak match investigative even with complete ownership", () => {
     const result = routeFromChunks([chunk("a", "a.ts", 0.04)], owned);
-    expect(result.team).toBe("@a");
-    expect(result.confidence).toBe(0.04);
-    expect(result.explanation.ownership.status).toBe("assigned");
+    expect(result).toMatchObject({
+      owningRepo: "a",
+      team: null,
+      confidence: 0.04,
+      recommendationStatus: "low-confidence",
+      explanation: {
+        ownership: {
+          status: "assigned",
+          candidates: [{ owner: "@a", support: 1 }],
+        },
+      },
+    });
   });
 
   it("leaves an exact owner tie unassigned and reduces confidence", () => {

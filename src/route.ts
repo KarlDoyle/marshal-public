@@ -10,6 +10,8 @@ import type {
 
 /** How many evidence files (per repo) feed the confidence calculation. */
 const EVIDENCE_TOP_N = 5;
+/** Presentation threshold based on observed weak examples; not a calibrated cutoff. */
+const LOW_CONFIDENCE_THRESHOLD = 0.05;
 
 function clamp01(n: number): number {
   return Math.max(0, Math.min(1, n));
@@ -82,6 +84,7 @@ export function routeFromChunks(
     return {
       owningRepo: null,
       team: null,
+      recommendationStatus: "no-evidence",
       confidence: 0,
       evidenceFiles: [],
       explanation: {
@@ -147,7 +150,8 @@ export function routeFromChunks(
   );
   return {
     owningRepo: winner.repo,
-    team,
+    team: confidence < LOW_CONFIDENCE_THRESHOLD ? null : team,
+    recommendationStatus: confidence < LOW_CONFIDENCE_THRESHOLD ? "low-confidence" : "candidate",
     confidence,
     evidenceFiles,
     explanation: {

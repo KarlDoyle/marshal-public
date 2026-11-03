@@ -51,9 +51,38 @@ describe("routeFromChunks (pure routing heuristics)", () => {
     expect(r).toMatchObject({
       owningRepo: null,
       team: null,
+      recommendationStatus: "no-evidence",
       confidence: 0,
       evidenceFiles: [],
       explanation: { repositoryStatus: "no-evidence", runnerUp: null, repositoryScores: [] },
+    });
+  });
+
+  it("labels weak candidates as investigative and leaves owner evidence visible", () => {
+    const r = routeFromChunks(
+      [{ repo: "a", filePath: "src/unrelated.ts", similarity: 0.04, content: "" }],
+      new Map([["a", [{ pattern: "*", owners: ["@team"] }]]]),
+    );
+
+    expect(r).toMatchObject({
+      owningRepo: "a",
+      team: null,
+      confidence: 0.04,
+      recommendationStatus: "low-confidence",
+      explanation: { ownership: { candidates: [{ owner: "@team", support: 1 }] } },
+    });
+  });
+
+  it("keeps a candidate and team at the documented confidence threshold", () => {
+    const r = routeFromChunks(
+      [{ repo: "a", filePath: "src/app.ts", similarity: 0.05, content: "" }],
+      new Map([["a", [{ pattern: "*", owners: ["@team"] }]]]),
+    );
+
+    expect(r).toMatchObject({
+      team: "@team",
+      confidence: 0.05,
+      recommendationStatus: "candidate",
     });
   });
 
@@ -117,6 +146,7 @@ describe("routeFromChunks (pure routing heuristics)", () => {
     );
     expect(uncovered.team).toBeNull();
     expect(uncovered.confidence).toBeLessThan(covered.confidence);
+    expect(uncovered.explanation.ownership.status).toBe("unmatched");
   });
 
   it("does not divide by zero when every retrieved chunk scores zero", () => {
@@ -142,6 +172,7 @@ describe("routeFromChunks (pure routing heuristics)", () => {
     );
     const withoutOwners = routeFromChunks(chunks, new Map([["a", null]]));
     expect(withoutOwners.team).toBeNull();
+    expect(withoutOwners.explanation.ownership.status).toBe("missing");
     expect(withoutOwners.confidence).toBeLessThan(withOwners.confidence);
   });
 });

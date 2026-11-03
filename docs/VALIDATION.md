@@ -12,6 +12,18 @@ The preceding live check used published Quarry 0.2.2 with separate indexes for c
 
 These examples establish that the workflow executed, not general routing accuracy. A generated draft proposed adding behaviour already present in the code. Review the source before turning generated acceptance criteria into implementation work. Missing CODEOWNERS coverage leaves the team unassigned, and confidence is a heuristic score rather than a calibrated probability.
 
+## Practical routing evaluation — 3 November 2026
+
+Eight synthetic, source-derived Jira fixtures were routed against rebuilt Quarry and Moss indexes. This was a workflow evaluation, not an accuracy benchmark.
+
+- Marshal selected the intended repository in all four clear cases. Team attribution was often contested or broader than expected.
+- The ambiguous cross-repository case produced near-tied repository scores and 0.01 confidence.
+- Missing CODEOWNERS on an isolated Quarry copy left the team unset, reported ownership as missing, and reduced confidence.
+- Vague and unrelated tickets produced named candidates at 0.03 and 0.04 confidence. They remain visible for investigation but are now labelled `low-confidence`, with the top-level team unset.
+- The rewrite proposed changes for hybrid retrieval and lane-skip explanations, although both behaviours already exist in the retrieved source. Suggested paths were supported by the supplied context. These two model observations are limited examples, not evidence of general rewrite quality.
+
+The 0.05 display threshold separates those observed weak examples from the higher-scoring examples in this small set. It is provisional and is not an empirically calibrated cutoff. Temporary fixtures, indexes and raw model output are kept out of this repository.
+
 ## Retrieval check
 
 The 28-question Moss evaluation used published Quarry 0.2.2 and Moss public snapshot `6e90118`: 224 indexed files and 2,275 chunks, with the local Xenova/all-MiniLM-L6-v2 embedding model. The questions and expected paths were hand-authored for an earlier Moss snapshot. They are a small, author-labelled set.

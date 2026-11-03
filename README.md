@@ -42,6 +42,8 @@ Weak matches, competing repositories and missing ownership information reduce co
 
 An exact repository tie is shown explicitly with zero confidence; repository-name order chooses the displayed candidate consistently. An exact owner tie leaves the team unassigned. Without positive similarity, no repository is recommended. Route JSON includes an `explanation` with repository scores, the runner-up, ownership candidates and the four factors whose product produces confidence. Evidence files are shown in Quarry's hybrid rank order after the five-file scoring limit is applied.
 
+Routes below heuristic confidence 0.05 are marked `recommendationStatus: "low-confidence"`. The repository and evidence remain visible for investigation, while the top-level team is left unset; ownership candidates remain in the explanation. At 0.05 and above, `recommendationStatus` is `"candidate"`. This provisional display threshold is based on a small synthetic practical evaluation, not calibrated routing accuracy.
+
 Retrieval still has a global chunk budget (12 by default). Repository-name order makes the round-robin merge reproducible; it does not establish relevance. A budget smaller than the number of repositories can omit repositories. Routing only compares the evidence retrieved and is not a representative accuracy evaluation.
 
 ## Current status and limitations
