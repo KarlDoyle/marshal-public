@@ -21,7 +21,7 @@
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "commander": "^12.1.0",
+    "commander": "^15.0.0",
     "@mrkarldoyle/quarry": "^0.2.2"
   },
   "devDependencies": {
